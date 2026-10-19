@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import test from 'node:test'
 import { getPiSearchArgs } from './piSearch.js'
 
@@ -58,6 +59,22 @@ test('custom runtime, arguments and configured search credentials win', (t) => {
   for (const key of ['TAVILY_API_KEY', 'BRAVE_API_KEY', 'EXA_API_KEY', 'PARALLEL_API_KEY', 'BING_SEARCH_API_KEY']) {
     assert.deepEqual(getPiSearchArgs(args, { ...options, environment: { ...options.environment, [key]: 'configured' } }), [])
   }
+})
+
+test('custom agent directories use Pi tilde, URL and child working-directory semantics', (t) => {
+  const options = fixture(t)
+  const customDir = join(options.root, '.pi', 'custom')
+  mkdirSync(customDir, { recursive: true })
+  writeFileSync(join(customDir, 'mcp.json'), '{}')
+  for (const directory of ['~/.pi/custom', '../.pi/custom', pathToFileURL(customDir).href]) {
+    assert.deepEqual(getPiSearchArgs(args, { ...options, environment: { ...options.environment, PI_CODING_AGENT_DIR: directory } }), [])
+  }
+  writeFileSync(join(options.root, 'mcp.json'), '{}')
+  assert.deepEqual(getPiSearchArgs(args, { ...options, environment: { ...options.environment, PI_CODING_AGENT_DIR: '~' } }), [])
+  assert.deepEqual(
+    getPiSearchArgs(args, { ...options, environment: { ...options.environment, PI_CODING_AGENT_DIR: 'file://invalid-host/path' } }),
+    [],
+  )
 })
 
 test('off and tool permission flags win even with explicit parallel selection', (t) => {

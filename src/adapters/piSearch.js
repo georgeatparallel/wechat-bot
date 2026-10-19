@@ -43,7 +43,22 @@ export function getPiSearchArgs(agentArgs, { config, cwd = process.cwd(), enviro
     )
       return []
 
-    const agentDir = environment.PI_CODING_AGENT_DIR || join(environment.HOME || homedir(), '.pi', 'agent')
+    const home = environment.HOME || homedir()
+    let agentDir = environment.PI_CODING_AGENT_DIR || join(home, '.pi', 'agent')
+    if (agentDir === '~') agentDir = home
+    else if (agentDir.startsWith('~/') || (process.platform === 'win32' && agentDir.startsWith('~\\'))) {
+      agentDir = join(home, agentDir.slice(2))
+    } else if (agentDir.startsWith('file://')) {
+      try {
+        agentDir = fileURLToPath(agentDir)
+      } catch {
+        return []
+      }
+    }
+    // Pi also translates Windows shell drive paths. Leave those custom paths
+    // alone in auto mode rather than inspect a different native directory.
+    if (process.platform === 'win32' && agentDir.startsWith('/')) return []
+    agentDir = resolve(cwd, agentDir)
     if (hasPiConfiguration(agentDir)) return []
     let directory = resolve(cwd)
     while (true) {
