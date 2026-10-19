@@ -43,7 +43,7 @@ export function getPiSearchArgs(agentArgs, { config, cwd = process.cwd(), enviro
     )
       return []
 
-    const home = environment.HOME || homedir()
+    const home = (process.platform === 'win32' ? environment.USERPROFILE : environment.HOME) || homedir()
     let agentDir = environment.PI_CODING_AGENT_DIR || join(home, '.pi', 'agent')
     if (agentDir === '~') agentDir = home
     else if (agentDir.startsWith('~/') || (process.platform === 'win32' && agentDir.startsWith('~\\'))) {

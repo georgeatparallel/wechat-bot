@@ -14,7 +14,7 @@ function fixture(t) {
   t.after(() => rmSync(root, { recursive: true, force: true }))
   const cwd = join(root, 'project')
   mkdirSync(cwd)
-  const environment = { HOME: root }
+  const environment = { HOME: root, USERPROFILE: root }
   return { root, cwd, environment, config }
 }
 
@@ -23,7 +23,7 @@ test('fresh Pi gets the packaged extension without changing arguments', (t) => {
   const original = [...args]
   const result = getPiSearchArgs(args, options)
   assert.equal(result[0], '--extension')
-  assert.match(result[1], /src\/pi\/parallel-search\.js$/)
+  assert.match(result[1], /src[/\\]pi[/\\]parallel-search\.js$/)
   assert.deepEqual(args, original)
 })
 
@@ -71,10 +71,7 @@ test('custom agent directories use Pi tilde, URL and child working-directory sem
   }
   writeFileSync(join(options.root, 'mcp.json'), '{}')
   assert.deepEqual(getPiSearchArgs(args, { ...options, environment: { ...options.environment, PI_CODING_AGENT_DIR: '~' } }), [])
-  assert.deepEqual(
-    getPiSearchArgs(args, { ...options, environment: { ...options.environment, PI_CODING_AGENT_DIR: 'file://invalid-host/path' } }),
-    [],
-  )
+  assert.deepEqual(getPiSearchArgs(args, { ...options, environment: { ...options.environment, PI_CODING_AGENT_DIR: 'file:///%' } }), [])
 })
 
 test('off and tool permission flags win even with explicit parallel selection', (t) => {
